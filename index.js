@@ -28,6 +28,9 @@ function resolveBlogId(args) {
     }
     return blogId;
 }
+function jsonResponse(data) {
+    return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+}
 class BloggerMCPServer {
     server;
     constructor() {
@@ -330,21 +333,14 @@ class BloggerMCPServer {
             const response = await bloggerClient.blogs.listByUser({
                 userId: 'self',
             });
-            const blogs = response.data.items || [];
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Found ${blogs.length} blog(s):\n\n` +
-                            (blogs.length > 0
-                                ? blogs.map(blog => `**${blog.name}**\n` +
-                                    `ID: ${blog.id}\n` +
-                                    `URL: ${blog.url}\n` +
-                                    `---`).join('\n\n')
-                                : 'No blogs found.'),
-                    },
-                ],
-            };
+            const blogs = (response.data.items || []).map(blog => ({
+                id: blog.id,
+                name: blog.name,
+                description: blog.description || '',
+                url: blog.url,
+                posts: blog.posts?.totalItems || 0,
+            }));
+            return jsonResponse({ total: blogs.length, blogs });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to list blogs: ${error}`);
@@ -369,27 +365,16 @@ class BloggerMCPServer {
                 });
             }
             const blog = response.data;
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify({
-                            id: blog.id,
-                            name: blog.name,
-                            description: blog.description,
-                            url: blog.url,
-                            published: blog.published,
-                            updated: blog.updated,
-                            posts: {
-                                totalItems: blog.posts?.totalItems || 0,
-                            },
-                            pages: {
-                                totalItems: blog.pages?.totalItems || 0,
-                            },
-                        }, null, 2),
-                    },
-                ],
-            };
+            return jsonResponse({
+                id: blog.id,
+                name: blog.name,
+                description: blog.description || '',
+                url: blog.url,
+                published: blog.published,
+                updated: blog.updated,
+                posts: blog.posts?.totalItems || 0,
+                pages: blog.pages?.totalItems || 0,
+            });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to get blog info: ${error}`);
@@ -403,20 +388,15 @@ class BloggerMCPServer {
                 blogId,
                 maxResults,
             });
-            const posts = response.data.items || [];
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Found ${posts.length} posts:\n\n` +
-                            posts.map(post => `**${post.title}**\n` +
-                                `ID: ${post.id}\n` +
-                                `Published: ${post.published}\n` +
-                                `URL: ${post.url}\n` +
-                                `---`).join('\n\n'),
-                    },
-                ],
-            };
+            const posts = (response.data.items || []).map(post => ({
+                id: post.id,
+                title: post.title,
+                published: post.published,
+                updated: post.updated,
+                url: post.url,
+                labels: post.labels || [],
+            }));
+            return jsonResponse({ total: posts.length, posts });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to list posts: ${error}`);
@@ -434,22 +414,13 @@ class BloggerMCPServer {
                 maxResults,
                 status: 'draft',
             });
-            const drafts = response.data.items || [];
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Found ${drafts.length} draft(s):\n\n` +
-                            (drafts.length > 0 
-                                ? drafts.map(post => `**${post.title}**\n` +
-                                    `ID: ${post.id}\n` +
-                                    `Created: ${post.published || 'N/A'}\n` +
-                                    `Updated: ${post.updated}\n` +
-                                    `---`).join('\n\n')
-                                : 'No drafts found.'),
-                    },
-                ],
-            };
+            const drafts = (response.data.items || []).map(post => ({
+                id: post.id,
+                title: post.title,
+                updated: post.updated,
+                labels: post.labels || [],
+            }));
+            return jsonResponse({ total: drafts.length, drafts });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to list drafts: ${error}`);
@@ -466,20 +437,16 @@ class BloggerMCPServer {
             }
             const response = await bloggerClient.posts.get(params);
             const post = response.data;
-            const status = post.status || 'LIVE';
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `**${post.title}**\n\n` +
-                            `Status: ${status}\n` +
-                            `Published: ${post.published || 'N/A'}\n` +
-                            `Updated: ${post.updated}\n` +
-                            `URL: ${post.url || 'N/A (draft)'}\n\n` +
-                            `**Content:**\n${post.content}`,
-                    },
-                ],
-            };
+            return jsonResponse({
+                id: post.id,
+                title: post.title,
+                status: post.status || 'LIVE',
+                published: post.published || null,
+                updated: post.updated,
+                url: post.url || null,
+                labels: post.labels || [],
+                content: post.content,
+            });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to get post: ${error}`);
@@ -493,20 +460,15 @@ class BloggerMCPServer {
                 blogId,
                 q: query,
             });
-            const posts = response.data.items || [];
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Found ${posts.length} posts matching "${query}":\n\n` +
-                            posts.map(post => `**${post.title}**\n` +
-                                `ID: ${post.id}\n` +
-                                `Published: ${post.published}\n` +
-                                `URL: ${post.url}\n` +
-                                `---`).join('\n\n'),
-                    },
-                ],
-            };
+            const posts = (response.data.items || []).map(post => ({
+                id: post.id,
+                title: post.title,
+                published: post.published,
+                updated: post.updated,
+                url: post.url,
+                labels: post.labels || [],
+            }));
+            return jsonResponse({ query, total: posts.length, posts });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to search posts: ${error}`);
@@ -525,44 +487,19 @@ class BloggerMCPServer {
                 content,
                 labels,
             };
-            // Use the correct API pattern for drafts
-            if (isDraft) {
-                const response = await bloggerClient.posts.insert({
-                    blogId,
-                    requestBody: post,
-                    isDraft: true,
-                });
-                const createdPost = response.data;
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Successfully created draft: **${createdPost.title}**\n\n` +
-                                `Post ID: ${createdPost.id}\n` +
-                                `Status: Draft\n` +
-                                `Created: ${createdPost.published || 'Draft (not published)'}`,
-                        },
-                    ],
-                };
-            }
-            else {
-                const response = await bloggerClient.posts.insert({
-                    blogId,
-                    requestBody: post,
-                });
-                const createdPost = response.data;
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Successfully created post: **${createdPost.title}**\n\n` +
-                                `Post ID: ${createdPost.id}\n` +
-                                `URL: ${createdPost.url}\n` +
-                                `Published: ${createdPost.published}`,
-                        },
-                    ],
-                };
-            }
+            const response = await bloggerClient.posts.insert({
+                blogId,
+                requestBody: post,
+                isDraft: isDraft,
+            });
+            const createdPost = response.data;
+            return jsonResponse({
+                id: createdPost.id,
+                title: createdPost.title,
+                status: isDraft ? 'DRAFT' : 'LIVE',
+                published: createdPost.published || null,
+                url: createdPost.url || null,
+            });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to create post: ${error}`);
@@ -595,18 +532,13 @@ class BloggerMCPServer {
                 requestBody: postData,
             });
             const updatedPost = response.data;
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Successfully updated post: **${updatedPost.title}**\n\n` +
-                            `Post ID: ${updatedPost.id}\n` +
-                            `Status: ${updatedPost.status || 'LIVE'}\n` +
-                            `URL: ${updatedPost.url || 'N/A (draft)'}\n` +
-                            `Last Updated: ${updatedPost.updated}`,
-                    },
-                ],
-            };
+            return jsonResponse({
+                id: updatedPost.id,
+                title: updatedPost.title,
+                status: updatedPost.status || 'LIVE',
+                url: updatedPost.url || null,
+                updated: updatedPost.updated,
+            });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to update post: ${error}`);
@@ -619,44 +551,20 @@ class BloggerMCPServer {
             }
             const auth = await this.getAuthClient(true);
             const bloggerClient = this.getBloggerClient(auth);
-            if (action === 'publish') {
-                const response = await bloggerClient.posts.publish({
-                    blogId,
-                    postId,
-                });
-                const post = response.data;
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Successfully published: **${post.title}**\n\n` +
-                                `Post ID: ${post.id}\n` +
-                                `URL: ${post.url}\n` +
-                                `Published: ${post.published}`,
-                        },
-                    ],
-                };
-            }
-            else if (action === 'revert') {
-                const response = await bloggerClient.posts.revert({
-                    blogId,
-                    postId,
-                });
-                const post = response.data;
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Successfully reverted to draft: **${post.title}**\n\n` +
-                                `Post ID: ${post.id}\n` +
-                                `Status: Draft`,
-                        },
-                    ],
-                };
-            }
-            else {
+            if (action !== 'publish' && action !== 'revert') {
                 throw new McpError(ErrorCode.InvalidParams, 'action must be "publish" or "revert"');
             }
+            const response = action === 'publish'
+                ? await bloggerClient.posts.publish({ blogId, postId })
+                : await bloggerClient.posts.revert({ blogId, postId });
+            const post = response.data;
+            return jsonResponse({
+                id: post.id,
+                title: post.title,
+                status: action === 'publish' ? 'LIVE' : 'DRAFT',
+                published: post.published || null,
+                url: post.url || null,
+            });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to ${action} post: ${error}`);
@@ -673,14 +581,7 @@ class BloggerMCPServer {
                 blogId,
                 postId,
             });
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Successfully deleted post with ID: ${postId}`,
-                    },
-                ],
-            };
+            return jsonResponse({ id: postId, deleted: true });
         }
         catch (error) {
             throw new McpError(ErrorCode.InternalError, `Failed to delete post: ${error}`);

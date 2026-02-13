@@ -92,8 +92,8 @@ Add the server to your Agent MCP configuration file (such as `mcp_config.json`):
 {
   "mcpServers": {
     "blogger": {
-      "command": "node",
-      "args": ["/absolute/path/to/mcp-blogger/index.js"],
+      "command": "npx",
+      "args": ["-y", "mcp-blogger"],
       "env": {
         "BLOGGER_API_KEY": "your-api-key",
         "GOOGLE_CLIENT_ID": "your-client-id",
@@ -110,7 +110,7 @@ Add the server to your Agent MCP configuration file (such as `mcp_config.json`):
 Add the server via the Claude Code CLI:
 
 ```bash
-claude mcp add blogger -- node /absolute/path/to/mcp-blogger/index.js \
+claude mcp add blogger -- npx -y mcp-blogger \
   -e BLOGGER_API_KEY=your-api-key \
   -e GOOGLE_CLIENT_ID=your-client-id \
   -e GOOGLE_CLIENT_SECRET=your-client-secret \
