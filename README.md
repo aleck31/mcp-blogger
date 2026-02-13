@@ -31,7 +31,7 @@ mcp-blogger/
 ## Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/aleck31/mcp-blogger.git
 cd mcp-blogger
 npm install
 ```
