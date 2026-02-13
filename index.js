@@ -5,6 +5,7 @@ import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } f
 import { google } from 'googleapis';
 import { readFileSync } from 'fs';
 import { BloggerOAuth } from './oauth.js';
+import pkg from './package.json' with { type: 'json' };
 const API_KEY = process.env.BLOGGER_API_KEY;
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -32,7 +33,7 @@ class BloggerMCPServer {
     constructor() {
         this.server = new Server({
             name: 'blogger-mcp-server',
-            version: '1.1.1',
+            version: pkg.version,
         }, {
             capabilities: {
                 tools: {},
