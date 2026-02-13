@@ -19,8 +19,6 @@ An [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that 
 mcp-blogger/
 ├── index.js          # Main MCP server — tool definitions and handlers
 ├── oauth.js          # OAuth 2.0 authentication flow
-├── index.d.ts        # Type declarations for index.js
-├── oauth.d.ts        # Type declarations for oauth.js
 └── package.json      # Project metadata and dependencies
 ```
 
